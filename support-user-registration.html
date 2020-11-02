@@ -45,34 +45,59 @@
           <!-- ************************************************************************************** -->
           <div class="flex-row">
             <div class="flex-item flex-column">
-              <h1 id="make-a-user-registration-request-in-edgenet">Make a user registration request in EdgeNet</h1>
-              <p>In EdgeNet, a user can have a variety of roles as authority-admin, Manager, and User, and Tech role will be enabled in the future to manage node operations. However, anyone who wants to use EdgeNet can make registration request to a authority only to become a user.</p>
+              <h1 id="make-a-user-registration-request-in-edgenet">Registering a user in an authority</h1>
+              <p class="text">
+                This support page describes whether and how you can register a <em>user</em> in an authority with EdgeNet.
+                Your registration in an authority is subject to the approval of that authority's admin. However, anyone
+                who wants to use EdgeNet can make registration request in an authority only to become a user.
+              </p>
+              <p>
+                There is a granular user permissions in EdgeNet, which allows authority admins to create roles to delegate
+                the responsibilities as they desire. Therefore, your role directly depends on, and will be defined by
+                the authority admin.
+              </p>
               <h2 id="technologies-you-will-use">Technologies you will use</h2>
-              <p>The technology that you will use is <a href="https://kubernetes.io/">Kubernetes</a>, to create
-              and manipulate objects in EdgeNet. Furthermore, you will use <a href="https://kubernetes.io/docs/reference/kubectl/overview/">kubectl</a>, which is the Kubernetes command-line interface
-              tool, to sign your user up for a authority in EdgeNet.</p>
-              <h2 id="how-to-do-">How to do?</h2>
-              <p>You will use an EdgeNet public kubeconfig file to make your registration request.</p>
-              <h3 id="create-a-request">Create a request</h3>
-              <p>In the first place, you need to create a user registration object according to your
-              information. This object must include username consisting of <a href="https://kubernetes.io/docs/concepts/overview/working-with-objects/names/">allowed characters</a>, the namespace of the authority, which is a combination of <strong>&quot;authority&quot;</strong> prefix and authority nickname, you want yourself to register in, firstname, lastname, email, and roles. Here is an example:</p>
+              <p>You will use <a href="https://kubernetes.io/docs/reference/kubectl/overview/"><code>kubectl</code></a>, the <a href="https://kubernetes.io/">Kubernetes</a> command-line interface, in conjunction with e-mail.</p>
+              <h2 id="what-you-will-do">What you will do</h2>
+              <p>You will use a public kubeconfig file provided by EdgeNet to create a <em>registration request</em> object that is associated with your e-mail address. Object creation generates an e-mail to you, containing a one-time code. You will authenticate yourself by using that code to patch the object. This will alert the authority administrators, who will, if all is in order, approve your request. With approval, you receive via e-mail a kubeconfig file that is specific to you and that allows you to act as a user of the authority from which you make the request.</p>
+              <h2 id="steps">Steps</h2>
+              <h3 id="make-sure-you-have-the-kubernetes-command-line-tool">Make sure you have the Kubernetes command-line tool</h3>
+              <p>If you do not already have <code>kubectl</code>, you will need to install it on your system. Follow the <a href="https://kubernetes.io/docs/tasks/tools/install-kubectl/">Kubernetes documentation</a> for this.</p>
+              <h3 id="obtain-a-temporary-access-credential">Obtain a temporary access credential</h3>
+              <p>An EdgeNet user registration request is a Kubernetes object, and to manipulate objects on a Kubernetes system you need a kubeconfig file. EdgeNet provides a public kubeconfig file that anyone can use for the purpose of creating user registration requests.</p>
+              <p>This public kubeconfig file is available here: <a href="https://edge-net.org/downloads/config/public.cfg">https://edge-net.org/downloads/config/public.cfg</a>. In what follows, we will assume that it is saved in your working directory on your system as <code>./public.cfg</code>.</p>
+              <p>The public file does not allow any actions beyond the creation of a user registration request and the use of the one-time code to confirm the request. Once the request goes through, you will be provided with another kubeconfig file that is specific to you and that will allow you to use EdgeNet as an ordinary user.</p>
+              <h3 id="prepare-a-description-of-your-user">Prepare a description of your user</h3>
+              <p>The <a href="https://kubernetes.io/docs/concepts/overview/working-with-objects/kubernetes-objects/"><code>.yaml</code> format</a> is used to describe Kubernetes objects. Create one for the user registration request object, following the model of the example shown below. Your <code>.yaml</code>file must specify the following information regarding your future user:</p>
+              <ul>
+              <li>the <strong>username</strong> that will be used by the EdgeNet system; it must follow <a href="https://kubernetes.io/docs/concepts/overview/working-with-objects/names/">Kubernetes&#39; rules for names</a> and must be different from any existing EdgeNet authority names</li>
+              <li>a <strong>first name</strong> (human readable)</li>
+              <li>a <strong>last name</strong> (human readable)</li>
+              <li>an <strong>e-mail address</strong>, which should be an institutional e-mail address</li>
+              </ul>
+              <p>In what follows, we will assume that this file is saved in your working directory on your system as <code>./userregistrationrequest.yaml</code>.</p>
+              <p>Example:</p>
               <pre class="pre"><code class="lang-yaml">apiVersion: apps.edgenet.io/v1alpha
 kind: UserRegistrationRequest
 metadata:
-  name: &lt;your username&gt;
-  namespace: &lt;your authority name as a nickname with a authority prefix, e.g. authority-lip6&gt;
+  name: bsenel
+  namespace: authority-edgenet
 spec:
-  firstname: &lt;your firstname&gt;
-  lastname: &lt;your lastname&gt;
-  email: &lt;your email address&gt;
-  roles: [User]</code></pre>
-              <pre class="pre"><code>kubectl create -f ./userregistrationrequest.yaml --kubeconfig ./public-user.cfg</code></pre>
-              <h3 id="email-verification">Email verification</h3>
-              <p>When you create a user registration request, EdgeNet automatically sends you an email that includes a kubectl command providing unique identifier to verify your email address. You can find the example below for verification.</p>
-              <pre class="pre"><code>kubectl patch emailverification bsv10kgeyo7pmazwpr -n &lt;the authority namespace&gt; --type='json' -p='[{"op": "replace", "path": "/spec/verified", "value": true}]' --kubeconfig ./public-user.cfg</code></pre>
-              <p>The system sends notification emails to the authority-admin(s) and manager(s) about your registration request when the verification is done.</p>
-              <h3 id="approval-process">Approval process</h3>
-              <p>At this point, your request will be approved or denied by the authority-admin(s) or manager(s) of the authority. However, we assume that your request has been approved, in this case, you will receive two emails. The first one says your registration completed while the second one contains your user information and user-specific kubeconfig file. Then you can start using EdgeNet with that kubeconfig file.</p>
+  firstname: Berat
+  lastname: Senel
+  email: berat.senel@lip6.fr</code></pre>
+              <h3 id="create-your-user-registration-request">Create your user registration request</h3>
+              <p>Using <code>kubectl</code>, create a user registration request object:</p>
+              <pre class="pre"><code>kubectl create -f ./userregistrationrequest.yaml --kubeconfig ./public.cfg</code></pre>
+              <p>This will cause an e-mail containing a one-time code to be sent to the address that you specified.</p>
+              <h3 id="authenticate-your-request-using-a-one-time-code">Authenticate your request using a one-time code</h3>
+              <p>The e-mail that you receive will contain a <code>kubectl</code> command that you can copy and paste onto your command line, editing only the path for the public kubeconfig file on your local system, if needed.</p>
+              <p>In the example here, the one-time code is <code>bsv10kgeyo7pmazwpr</code>:</p>
+              <pre class="pre"><code>kubectl patch emailverification bsv10kgeyo7pmazwpr -n registration --type='json' -p='[{"op": "replace", "path": "/spec/verified", "value": true}]' --kubeconfig ./public.cfg</code></pre>
+              <p>After you have done this, the EdgeNet system sends a notification e-mail to the authority administrators, informing them of your registration request.</p>
+              <h3 id="wait-for-approval-and-receipt-of-your-permanent-access-credential">Wait for approval and receipt of your permanent access credential</h3>
+              <p>At this point, the authority administrators will, if needed, contact you, and, provided everything is in order, approve your registration request. Upon approval, you will receive an email that confirms that your registration is complete, and contains your user information and user-specific kubeconfig file.</p>
+              <p>You can now start using EdgeNet, as a regular user, with your user-specific kubeconfig file.</p>
             </div>
           </div>
           <!-- ************************************************************************************** -->
